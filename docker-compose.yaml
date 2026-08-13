@@ -130,7 +130,8 @@ services:
         max-file: "3"
 
   task-runners:
-    image: n8nio/runners:2.34.5
+    image: n8nio/runners:2.34.5-distroless
+    user: "65532:65532"
     environment:
       N8N_RUNNERS_TASK_BROKER_URI: http://n8n-worker:5679
       N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?N8N_RUNNERS_AUTH_TOKEN must be set}
@@ -139,12 +140,40 @@ services:
     depends_on:
       - n8n-worker
     restart: "no"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5680/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+    # Hardened per https://docs.n8n.io/deploy/host-n8n/configure-n8n/security/harden-task-runners:
+    # distroless image (no shell/package manager), unprivileged nobody user (65532:65532),
+    # read-only root fs with a small tmpfs /tmp, cap_drop: ALL. AppArmor profile from the same
+    # guide is deliberately NOT applied here — it requires a profile loaded on the Coolify
+    # host, and this fleet has no host-provisioning mechanism yet. Tracked as a known gap in
+    # specs/n8n.md, follow-up work.
+    #
+    # No Docker healthcheck: verified live that n8nio/runners:2.34.5-distroless ships neither
+    # a shell (no /bin/sh, so CMD-SHELL always fails with "exec: /bin/sh: no such file or
+    # directory") nor wget/curl (no exec-form HTTP check is possible either) — confirmed via
+    # `docker exec` against the running container, and matches the distroless image's own
+    # stated design ("excluding package managers, shells, and other utilities that aren't
+    # needed at runtime" per the hardening guide linked above). Adding an HTTP client back in
+    # would defeat the point of choosing the distroless image. The launcher process does open
+    # a health-check HTTP server on :5680 (visible in its own startup logs), so an external
+    # prober (e.g. from another container, or Coolify's own health mechanism if it becomes
+    # available for non-web services) could still hit it — tracked as a known gap in
+    # specs/n8n.md alongside the AppArmor gap. Container `running` state (not health status)
+    # is what Step 3's validation checks, consistent with this file's own note there.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   postgres:
     image: postgres:18-alpine
