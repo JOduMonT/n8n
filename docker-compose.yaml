@@ -49,6 +49,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Security hardening (OWASP Docker Security Cheat Sheet). Deliberately no read_only:
+    # true here — n8n's write surface beyond the declared /home/node/.n8n volume isn't fully
+    # enumerable ahead of time (depends on what a user configures). Revisit if/when the
+    # actual runtime write paths are fully documented upstream, same posture as metamcp.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   n8n-worker:
     image: n8nio/n8n:2.34.5
@@ -96,6 +112,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Security hardening (OWASP Docker Security Cheat Sheet). Deliberately no read_only:
+    # true here — n8n's write surface beyond the declared /home/node/.n8n volume isn't fully
+    # enumerable ahead of time (depends on what a user configures). Revisit if/when the
+    # actual runtime write paths are fully documented upstream, same posture as metamcp.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   task-runners:
     image: n8nio/runners:2.34.5
@@ -129,6 +161,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   valkey:
     image: valkey/valkey:8-alpine
@@ -144,6 +198,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    # user: "999:1000" (valkey:valkey, baked into the image) — the image's entrypoint drops
+    # from root to this user via `setpriv`, which needs SETUID/SETGID; cap_drop: ALL removes
+    # those, so the container must start as this user directly instead. /data is already
+    # valkey-owned and world-writable (1777) in the image, so this works against a fresh
+    # named volume with no extra chown step. (Found live in the valkey repo's Task 1: the
+    # block without this line restart-loops with "setpriv: setresuid failed".)
+    user: "999:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   n8n-data:
