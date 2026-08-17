@@ -214,7 +214,7 @@ services:
         max-file: "3"
 
   valkey:
-    image: valkey/valkey:8-alpine
+    image: valkey/valkey:9-alpine
     restart: unless-stopped
     command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD:-n8n}", "--appendonly", "yes"]
     environment:
