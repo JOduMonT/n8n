@@ -1,6 +1,6 @@
 services:
   n8n:
-    image: n8nio/n8n:2.34.5
+    image: n8nio/n8n:2.35.3
     environment:
       N8N_EDITOR_BASE_URL: ${APP_URL:-http://localhost:5678}
       WEBHOOK_URL: ${APP_URL:-http://localhost:5678}
@@ -67,7 +67,7 @@ services:
         max-file: "3"
 
   n8n-worker:
-    image: n8nio/n8n:2.34.5
+    image: n8nio/n8n:2.35.3
     command: worker
     environment:
       GENERIC_TIMEZONE: UTC
