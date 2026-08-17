@@ -130,7 +130,7 @@ services:
         max-file: "3"
 
   task-runners:
-    image: n8nio/runners:2.34.5-distroless
+    image: n8nio/runners:2.35.3-distroless
     user: "65532:65532"
     environment:
       N8N_RUNNERS_TASK_BROKER_URI: http://n8n-worker:5679
