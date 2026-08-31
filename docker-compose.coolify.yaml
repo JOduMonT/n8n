@@ -130,7 +130,7 @@ services:
       start_period: 30s
 
   task-runners:
-    image: n8nio/runners:2.34.5-distroless
+    image: n8nio/runners:2.37.6-distroless
     user: "65532:65532"
     env_file:
       - .env
