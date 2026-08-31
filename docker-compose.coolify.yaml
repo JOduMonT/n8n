@@ -7,7 +7,7 @@
 # `task-runners` are internal-only (docker_compose_domains suppressed for both).
 services:
   n8n:
-    image: n8nio/n8n:2.34.5
+    image: n8nio/n8n:2.37.6
     env_file:
       - .env
     environment:
@@ -70,7 +70,7 @@ services:
       start_period: 30s
 
   n8n-worker:
-    image: n8nio/n8n:2.34.5
+    image: n8nio/n8n:2.37.6
     command: worker
     env_file:
       - .env
